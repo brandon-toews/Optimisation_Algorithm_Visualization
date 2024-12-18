@@ -5,8 +5,8 @@ using UnityEngine;
 public class TerrainGenerator : MonoBehaviour
 {
     [Header("Terrain Settings")]
-    [SerializeField] private int width = 100;
-    [SerializeField] private int length = 100;
+    [SerializeField] private int width = 50;
+    [SerializeField] private int length = 50;
     [SerializeField] private float heightScale = 20f;
     
     [Header("Noise Settings")]
@@ -20,6 +20,12 @@ public class TerrainGenerator : MonoBehaviour
     private MeshFilter meshFilter;
     private float[,] heightMap;
     
+    [SerializeField] private CameraController cameraController;
+    [SerializeField] private GameObject centerPoint;
+    [SerializeField] private GameObject terrainLowestPointMarkerPrefab;
+    private GameObject lowestPointMarker;
+    
+    
     // Properties to access terrain dimensions
     public int Width => width;
     public int Length => length;
@@ -30,6 +36,14 @@ public class TerrainGenerator : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
         heightMap = GenerateHeightMap();
         GenerateTerrain();
+        MarkLowestPoint();
+        cameraController.target = lowestPointMarker.transform;
+        /*centerPoint.transform.position = new Vector3
+        {
+            x = width / 2,
+            y = 10f,
+            z = length / 2
+        };*/
     }
 
     public void GenerateTerrain()
@@ -142,4 +156,30 @@ public class TerrainGenerator : MonoBehaviour
         
         return heightMap[heightMapX, heightMapZ] * heightScale;
     }
+    
+    private void MarkLowestPoint()
+    {
+        float lowestX = 0; 
+        float lowestZ = 0;
+        float lowestHeight = float.MaxValue;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < length; z++)
+            {
+                float height = GetHeightAtPoint(x, z);
+                if (height < lowestHeight)
+                {
+                    lowestHeight = height;
+                    lowestX = x;
+                    lowestZ = z;
+                }
+            }
+        }
+
+        Vector3 lowestPoint = new Vector3(lowestX, lowestHeight + 0.5f, lowestZ);
+        Destroy(lowestPointMarker);
+        lowestPointMarker = Instantiate(terrainLowestPointMarkerPrefab, lowestPoint, Quaternion.identity);
+    }
+    
 }

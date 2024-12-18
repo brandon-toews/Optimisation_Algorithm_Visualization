@@ -10,8 +10,12 @@ public class AlgorithmComparer : MonoBehaviour
     [SerializeField] private GradientDescent gradientDescent;
     
     [Header("UI Elements")]
-    [SerializeField] private Button startButton;
+    [SerializeField] private Button startGAButton;
+    [SerializeField] private Button startGDButton;
     [SerializeField] private Button resetButton;
+    [SerializeField] private Button stepGAButton;
+    [SerializeField] private Button stepGDButton;
+    [SerializeField] private Slider speedControlSlider;
     [SerializeField] private TextMeshProUGUI statusText;
 
     private bool isRunning = false;
@@ -19,51 +23,79 @@ public class AlgorithmComparer : MonoBehaviour
     private void Start()
     {
         // Setup UI listeners
-        if (startButton != null)
-            startButton.onClick.AddListener(StartComparison);
+        if (startGAButton != null)
+            startGAButton.onClick.AddListener(StartGeneticAlgorithmOnly);
+        if (startGDButton != null)
+            startGDButton.onClick.AddListener(StartGradientDescentOnly);
         if (resetButton != null)
             resetButton.onClick.AddListener(ResetComparison);
-            
-        // Initial setup
+        if (stepGAButton != null)
+            stepGAButton.onClick.AddListener(StepGeneticAlgorithm);
+        if (stepGDButton != null)
+            stepGDButton.onClick.AddListener(StepGradientDescent);
+        if (speedControlSlider != null)
+            speedControlSlider.onValueChanged.AddListener(UpdateSpeed);
+
         ResetComparison();
     }
 
-    public void StartComparison()
+    public void StartGeneticAlgorithmOnly()
     {
         if (!isRunning)
         {
             isRunning = true;
             UpdateUI();
-            
-            // Place GD at random position and start both algorithms
-            gradientDescent.RandomlyPlace();
-            gradientDescent.StartGradientDescent();
+
             geneticAlgorithm.StartGeneticSearch();
-            
-            // Start monitoring progress
             StartCoroutine(MonitorProgress());
         }
+    }
+
+    public void StartGradientDescentOnly()
+    {
+        if (!isRunning)
+        {
+            isRunning = true;
+            UpdateUI();
+
+            gradientDescent.RandomlyPlace();
+            gradientDescent.StartGradientDescent();
+            StartCoroutine(MonitorProgress());
+        }
+    }
+
+    public void StepGeneticAlgorithm()
+    {
+        if (!isRunning)
+            geneticAlgorithm.StepGeneticAlgorithm();
+    }
+
+    public void StepGradientDescent()
+    {
+        if (!isRunning)
+            gradientDescent.StepGradientDescent();
     }
 
     public void ResetComparison()
     {
         isRunning = false;
-        
-        // Reset both algorithms to starting positions
-        geneticAlgorithm.transform.position = Vector3.zero;
-        gradientDescent.transform.position = Vector3.zero;
-        
-        // Clear any existing GA population visualization
-        geneticAlgorithm.SendMessage("ClearVisualization", SendMessageOptions.DontRequireReceiver);
-        
+
+        geneticAlgorithm.ResetAlgorithm();
+        gradientDescent.ResetAlgorithm();
+
         UpdateUI();
+    }
+
+    private void UpdateSpeed(float value)
+    {
+        geneticAlgorithm.SetVisualUpdateDelay(value);
+        gradientDescent.SetMoveDelay(value);
     }
 
     private IEnumerator MonitorProgress()
     {
         while (isRunning)
         {
-            // Check if both algorithms have finished
             if (!geneticAlgorithm.IsSearching && !gradientDescent.IsDescending)
             {
                 isRunning = false;
@@ -71,7 +103,6 @@ public class AlgorithmComparer : MonoBehaviour
                 yield break;
             }
 
-            // Update status text
             if (statusText != null)
             {
                 string status = "Running:\n";
@@ -86,20 +117,19 @@ public class AlgorithmComparer : MonoBehaviour
 
     private void UpdateUI()
     {
-        if (startButton != null)
-            startButton.interactable = !isRunning;
+        bool enableStartButtons = !isRunning;
+        if (startGAButton != null)
+            startGAButton.interactable = enableStartButtons;
+        if (startGDButton != null)
+            startGDButton.interactable = enableStartButtons;
         if (resetButton != null)
-            resetButton.interactable = !isRunning;
+            resetButton.interactable = enableStartButtons;
+        if (stepGAButton != null)
+            stepGAButton.interactable = enableStartButtons;
+        if (stepGDButton != null)
+            stepGDButton.interactable = enableStartButtons;
+
         if (statusText != null)
             statusText.text = isRunning ? "Running..." : "Ready";
-    }
-
-    private void OnValidate()
-    {
-        // Auto-find references if not set
-        if (geneticAlgorithm == null)
-            geneticAlgorithm = FindFirstObjectByType<GeneticAlgorithm>();
-        if (gradientDescent == null)
-            gradientDescent = FindFirstObjectByType<GradientDescent>();
     }
 }

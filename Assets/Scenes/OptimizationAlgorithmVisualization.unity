@@ -852,7 +852,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   plantPrefab: {fileID: 7646758127176492012, guid: f94ff99c261e9924bbbb894292ced45c, type: 3}
-  gridSize: 30
+  gridSize: 20
   gridSpacing: 10
   minHeight: 1
   maxHeight: 4
@@ -1289,60 +1289,6 @@ MonoBehaviour:
   learningRateText: {fileID: 270778573}
   planeMaterial: {fileID: 2100000, guid: ada6c9dac35fc3643a291a2b0fcb2c80, type: 2}
   cameraController: {fileID: 330585548}
---- !u!1 &659042397
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 659042399}
-  - component: {fileID: 659042398}
-  m_Layer: 0
-  m_Name: GeneticAlgorithm
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &659042398
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 659042397}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e648019d0f2bbd4893059919d449966, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  populationSize: 50
-  generations: 100
-  mutationRate: 0.1
-  mutationRange: 5
-  crossoverRate: 0.7
-  individualPrefab: {fileID: 6324639364372763792, guid: bbd7c78a077ca104fb537ba882df28f1, type: 3}
-  bestMarkerPrefab: {fileID: 0}
-  showPopulation: 1
-  visualUpdateDelay: 0.1
-  terrain: {fileID: 0}
---- !u!4 &659042399
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 659042397}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.323629, y: 46.35586, z: 56.92489}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &692324058
 GameObject:
   m_ObjectHideFlags: 0
@@ -3535,7 +3481,7 @@ MonoBehaviour:
   m_MinValue: 10
   m_MaxValue: 50
   m_WholeNumbers: 1
-  m_Value: 30
+  m_Value: 20
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -3845,7 +3791,6 @@ SceneRoots:
   - {fileID: 330585546}
   - {fileID: 410087041}
   - {fileID: 832575519}
-  - {fileID: 659042399}
   - {fileID: 572605473}
   - {fileID: 1832477364}
   - {fileID: 1895163588}

@@ -3,7 +3,7 @@ using UnityEngine;
 public class CameraControls : MonoBehaviour
 {
     // Add this to any script where you want to start the comparison
-    public AlgorithmVisualizer visualizer;
+    //public AlgorithmVisualizer visualizer;
 
     //Speed of camera controls
     private const float Speed = 8f;

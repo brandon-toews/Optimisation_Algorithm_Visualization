@@ -37,7 +37,7 @@ public class TerrainGenerator : MonoBehaviour
         heightMap = GenerateHeightMap();
         GenerateTerrain();
         MarkLowestPoint();
-        cameraController.target = lowestPointMarker.transform;
+        cameraController.target = lowestPointMarker;
         /*centerPoint.transform.position = new Vector3
         {
             x = width / 2,

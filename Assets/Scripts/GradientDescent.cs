@@ -1,195 +1,302 @@
+using System;
+using TMPro;
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
+using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 public class GradientDescent : MonoBehaviour
 {
-    [Header("Movement Settings")]
-    [SerializeField] private float learningRate = 0.5f;
-    [SerializeField] private float stepSize = 0.1f;
-    [SerializeField] private float stopThreshold = 0.01f;
-    [SerializeField] private int maxSteps = 1000;
-    [SerializeField] private float moveDelay = 0.1f;
+    [Header("Algorithm Settings")]
+    [SerializeField] private float learningRate = 0.25f;
+    [SerializeField] private float stepSize = 1.0f;
+    [SerializeField] private int maxSteps = 100;
+    
+    [Header("Arrow Visualization")]
+    [SerializeField] private GameObject waterArrowPrefab; // Prefab for arrows
 
-    [Header("Visualization")]
-    [SerializeField] private GameObject gradientDescentPrefab;
-    [SerializeField] private GameObject pathMarkerPrefab;
-    [SerializeField] private Material lineMaterial; // Line material for drawing
-    [SerializeField] private int markerInterval = 5;
+    [SerializeField] private GameObject sunArrowPrefab;
+    private GameObject xArrow;
+    private GameObject zArrow;
+    private GameObject xGradientText;
+    private GameObject zGradientText;
+
+
 
     [Header("References")]
-    [SerializeField] private TerrainGenerator terrain;
+    [SerializeField] private PlantGrowthSimulation plantGrowthSimulation;
+    //[SerializeField] private Text currentHeightText;
+    [SerializeField] private TextMeshProUGUI gradientText;
+    [SerializeField] private Material highlightMaterial;
+    [SerializeField] private Slider learningRateSlider;
+    [SerializeField] private TextMeshProUGUI learningRateText;
+    [SerializeField] private Material planeMaterial;
+    [SerializeField] private CameraController cameraController;
+    private MeshFilter meshFilter;
+    private MeshRenderer meshRenderer;
 
-    private Vector3 currentPosition;
-    private bool isDescending = false;
-    private List<GameObject> pathMarkers = new List<GameObject>();
-    private GameObject gradientDescentInstance;
-
+    private Vector2 currentPosition;
     private int steps = 0;
-    private float previousHeight = float.MaxValue;
-
-    public bool IsDescending => isDescending;
-
-    private void Start()
-    {
-        if (terrain == null)
-            terrain = FindFirstObjectByType<TerrainGenerator>();
-    }
-
-    public void RandomlyPlace()
-    {
-        ClearPathMarkers();
-
-        float x = Random.Range(0, terrain.Width);
-        float z = Random.Range(0, terrain.Length);
-        float y = terrain.GetHeightAtPoint(x, z);
-
-        transform.position = new Vector3(x, y + 1f, z);
-        currentPosition = transform.position;
-
-        InstantiateGradientDescentPrefab();
-        PlacePathMarker(currentPosition);
-    }
-
-    public void StartGradientDescent()
-    {
-        if (!isDescending)
-        {
-            isDescending = true;
-            steps = 0;
-            previousHeight = float.MaxValue;
-            StartCoroutine(GradientDescentRoutine());
-        }
-        
-        if (lineMaterial == null)
-            return;
-
-        lineMaterial.SetPass(0);
-        GL.Begin(GL.LINES);
-        GL.Color(Color.blue);
-        GL.Vertex3(currentPosition.x, currentPosition.y, currentPosition.z);
-        GL.Vertex3(currentPosition.x, currentPosition.y + 10f, currentPosition.z);
-        GL.End();
-    }
-
-    public void StepGradientDescent()
-    {
-        if (!isDescending)
-        {
-            isDescending = true;
-            GradientDescentStepRoutine();
-            if (Mathf.Abs(previousHeight - currentPosition.y) < stopThreshold || steps >= maxSteps)
-                isDescending = false;
-        }
-    }
-
-    public void ResetAlgorithm()
-    {
-        StopAllCoroutines();
-        ClearPathMarkers();
-        Destroy(gradientDescentInstance);
-        isDescending = false;
-    }
-
-    public void SetMoveDelay(float delay)
-    {
-        moveDelay = delay;
-    }
-
-    private IEnumerator GradientDescentRoutine()
-    {
-        while (steps < maxSteps)
-        {
-            GradientDescentStepRoutine();
-
-            if (Mathf.Abs(previousHeight - currentPosition.y) < stopThreshold)
-                break;
-
-            yield return new WaitForSeconds(moveDelay);
-        }
-
-        PlacePathMarker(currentPosition);
-        isDescending = false;
-    }
-
-    private void GradientDescentStepRoutine()
-    {
-        float centerHeight = terrain.GetHeightAtPoint(currentPosition.x, currentPosition.z);
-        float gradX = (terrain.GetHeightAtPoint(currentPosition.x + stepSize, currentPosition.z) -
-                      terrain.GetHeightAtPoint(currentPosition.x - stepSize, currentPosition.z)) / (2 * stepSize);
-        float gradZ = (terrain.GetHeightAtPoint(currentPosition.x, currentPosition.z + stepSize) -
-                      terrain.GetHeightAtPoint(currentPosition.x, currentPosition.z - stepSize)) / (2 * stepSize);
-
-        Vector3 gradient = new Vector3(gradX, 0, gradZ);
-        Vector3 newPosition = currentPosition - learningRate * gradient;
-
-        newPosition.x = Mathf.Clamp(newPosition.x, 0, terrain.Width);
-        newPosition.z = Mathf.Clamp(newPosition.z, 0, terrain.Length);
-
-        float newHeight = terrain.GetHeightAtPoint(newPosition.x, newPosition.z);
-        newPosition.y = newHeight + 0.5f;
-
-        currentPosition = newPosition;
-        transform.position = currentPosition;
-
-        if (gradientDescentInstance != null)
-            gradientDescentInstance.transform.position = currentPosition;
-
-        if (steps % markerInterval == 0)
-            PlacePathMarker(currentPosition);
-
-        previousHeight = newHeight;
-        steps++;
-    }
-
-    private void PlacePathMarker(Vector3 position)
-    {
-        if (pathMarkerPrefab != null)
-        {
-            GameObject marker = Instantiate(pathMarkerPrefab, position, Quaternion.identity);
-            pathMarkers.Add(marker);
-        }
-    }
-
-    private void ClearPathMarkers()
-    {
-        foreach (var marker in pathMarkers)
-            Destroy(marker);
-
-        pathMarkers.Clear();
-    }
-
-    private void InstantiateGradientDescentPrefab()
-    {
-        if (gradientDescentPrefab != null)
-        {
-            Destroy(gradientDescentInstance);
-            gradientDescentInstance = Instantiate(gradientDescentPrefab, currentPosition, Quaternion.identity);
-        }
-    }
-
-    private void OnPostRender()
-    {
-        if (lineMaterial == null)
-        {
-            Debug.LogWarning("Line material is not set!");
-            return;
-        }
-
-        Debug.Log($"Drawing line at position {currentPosition}");
-        lineMaterial.SetPass(0);
-        GL.Begin(GL.LINES);
-        GL.Color(Color.blue);
-        GL.Vertex3(currentPosition.x, currentPosition.y, currentPosition.z);
-        GL.Vertex3(currentPosition.x, currentPosition.y + 10f, currentPosition.z);
-        GL.End();
-    }
-
+    private bool isRunning = false;
     
-    private void OnDrawGizmos()
+    private GameObject plane;
+
+    private void Awake()
     {
-        Gizmos.color = Color.blue;
-        Gizmos.DrawLine(currentPosition, currentPosition + Vector3.up * 10f);
+        learningRate = learningRateSlider.value;
     }
 
+    private void ClearPlane()
+    {
+        if (meshFilter != null)
+        {
+            meshFilter.mesh = null;
+        }
+    }
+
+    public void StartAlgorithm()
+    {
+        ClearPlane();
+        // Choose a random starting plant
+        int randomX = Random.Range(0, plantGrowthSimulation.gridSize-1);
+        int randomZ = Random.Range(0, plantGrowthSimulation.gridSize-1);
+        currentPosition = new Vector2(randomX, randomZ);
+        
+        cameraController.target = plantGrowthSimulation.plantGrid[randomX, randomZ];
+
+        // Highlight the starting plant
+        plantGrowthSimulation.HighlightPlant(currentPosition, highlightMaterial);
+        CreatePlane();
+        UpdateHeightAndGradientDisplay();
+        steps = 0;
+        isRunning = true;
+    }
+
+    public void StepAlgorithm()
+    {
+        if (!isRunning || steps >= maxSteps)
+            return;
+
+        Vector2 gradient = CalculateGradient(currentPosition);
+        
+        // Compute a tentative float position using gradient descent formula
+        float nextX = currentPosition.x - learningRate * gradient.x;
+        float nextZ = currentPosition.y - learningRate * gradient.y;
+
+        // Snap the float position to the nearest grid point
+        int snappedX = Mathf.Clamp(Mathf.RoundToInt(nextX), 0, plantGrowthSimulation.gridSize - 1);
+        int snappedZ = Mathf.Clamp(Mathf.RoundToInt(nextZ), 0, plantGrowthSimulation.gridSize - 1);
+        
+        cameraController.target = plantGrowthSimulation.plantGrid[snappedX, snappedZ];
+
+        // Move to the snapped position
+        Vector2 nextPosition = new Vector2(snappedX, snappedZ);
+        
+        plantGrowthSimulation.SetTransparency(plantGrowthSimulation.plantGrid[(int)currentPosition.x, (int)currentPosition.y], 0.3f);
+        currentPosition = nextPosition;
+        plantGrowthSimulation.HighlightPlant(currentPosition, highlightMaterial);
+        plantGrowthSimulation.SetTransparency(plantGrowthSimulation.plantGrid[(int)currentPosition.x, (int)currentPosition.y], 1);
+        UpdateHeightAndGradientDisplay();
+        steps++;
+
+        if (steps >= maxSteps)
+        {
+            isRunning = false;
+            Debug.Log("Gradient Descent completed.");
+        }
+    }
+
+    private Vector2 CalculateGradient(Vector2 position)
+    {
+        int x = Mathf.RoundToInt(position.x);
+        int z = Mathf.RoundToInt(position.y);
+
+        float gradX = 0, gradZ = 0;
+
+        // Gradient in X direction (central difference)
+        if (x + 1 < plantGrowthSimulation.gridSize && x - 1 >= 0)
+        {
+            gradX = (plantGrowthSimulation.heightMap[x + 1, z] - plantGrowthSimulation.heightMap[x - 1, z]) / (2 * stepSize);
+        }
+        // Handle edge cases using forward or backward difference
+        else if (x + 1 < plantGrowthSimulation.gridSize)
+        {
+            gradX = (plantGrowthSimulation.heightMap[x + 1, z] - plantGrowthSimulation.heightMap[x, z]) / stepSize;
+        }
+        else if (x - 1 >= 0)
+        {
+            gradX = (plantGrowthSimulation.heightMap[x, z] - plantGrowthSimulation.heightMap[x - 1, z]) / stepSize;
+        }
+
+        // Gradient in Z direction (central difference)
+        if (z + 1 < plantGrowthSimulation.gridSize && z - 1 >= 0)
+        {
+            gradZ = (plantGrowthSimulation.heightMap[x, z + 1] - plantGrowthSimulation.heightMap[x, z - 1]) / (2 * stepSize);
+        }
+        // Handle edge cases using forward or backward difference
+        else if (z + 1 < plantGrowthSimulation.gridSize)
+        {
+            gradZ = (plantGrowthSimulation.heightMap[x, z + 1] - plantGrowthSimulation.heightMap[x, z]) / stepSize;
+        }
+        else if (z - 1 >= 0)
+        {
+            gradZ = (plantGrowthSimulation.heightMap[x, z] - plantGrowthSimulation.heightMap[x, z - 1]) / stepSize;
+        }
+
+        Vector2 gradient = new Vector2(gradX * 10f, gradZ * 10f);
+
+        // Update the visualization
+        Vector3 worldPosition = new Vector3(
+            x * plantGrowthSimulation.gridSpacing, 
+            0, 
+            z * plantGrowthSimulation.gridSpacing
+        );
+        
+        UpdateVisualizationPlane(currentPosition);
+        UpdateArrows(currentPosition, gradient);
+
+        return gradient;
+    }
+
+
+    private void UpdateHeightAndGradientDisplay()
+    {
+        int x = Mathf.RoundToInt(currentPosition.x);
+        int z = Mathf.RoundToInt(currentPosition.y);
+        float height = plantGrowthSimulation.heightMap[x, z];
+        Vector2 gradient = CalculateGradient(currentPosition);
+        
+        GameObject textObject = new GameObject("Current Position");
+        textObject.transform.position = new Vector3(x*plantGrowthSimulation.gridSpacing, height*17f, z*plantGrowthSimulation.gridSpacing); // Offset for visibility
+        TextMesh textMesh = textObject.AddComponent<TextMesh>();
+        textMesh.text = height.ToString();
+        textMesh.fontSize = 40;
+        textMesh.color = Color.cyan;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        plantGrowthSimulation.axesNumbers.Add(textObject);
+        
+        gradientText.text = $"Gradients: \nWater(X): {gradient.x:F2} \nSunshine(Z): {gradient.y:F2}";
+    }
+    
+    private void CreatePlane()
+    {
+        int x = (int)currentPosition.x;
+        int z = (int)currentPosition.y;
+        float height = plantGrowthSimulation.heightMap[x, z];
+        plane = new GameObject("SlopePlane");
+        meshFilter = plane.AddComponent<MeshFilter>();
+        meshRenderer = plane.AddComponent<MeshRenderer>();
+        meshRenderer.material = planeMaterial;
+    }
+    
+    public void UpdateVisualizationPlane(Vector2 gridPosition)
+    {
+        int x = Mathf.RoundToInt(gridPosition.x);
+        int z = Mathf.RoundToInt(gridPosition.y);
+        float spacing = plantGrowthSimulation.gridSpacing;
+
+        // Get the four corners of our plane
+        Vector3[] corners = new Vector3[4];
+        
+        // Calculate actual world positions including height (excluding center point)
+        //corners[0] = new Vector3((x+1) * spacing, plantGrowthSimulation.heightMap[Mathf.Min(x+1, plantGrowthSimulation.gridSize-1), z]*15f, z * spacing); // Right
+        corners[0] = new Vector3((x+1) * spacing, plantGrowthSimulation.heightMap[Mathf.Min(x+1, plantGrowthSimulation.gridSize-1), Mathf.Min(z+1, plantGrowthSimulation.gridSize-1)]*15f, (z+1) * spacing); // Forward-Right
+        //corners[2] = new Vector3(x * spacing, plantGrowthSimulation.heightMap[x, Mathf.Min(z+1, plantGrowthSimulation.gridSize-1)]*15f, (z+1) * spacing); // Forward
+        corners[1] = new Vector3((x-1) * spacing, plantGrowthSimulation.heightMap[Mathf.Max(x-1, 0), Mathf.Min(z+1, plantGrowthSimulation.gridSize-1)]*15f, (z+1) * spacing); // Forward-Left
+        //corners[4] = new Vector3((x-1) * spacing, plantGrowthSimulation.heightMap[Mathf.Max(x-1, 0), z]*15f, z * spacing); // Left
+        corners[2] = new Vector3((x-1) * spacing, plantGrowthSimulation.heightMap[Mathf.Max(x-1, 0), Mathf.Max(z-1, 0)]*15f, (z-1) * spacing); // Backward-Left
+        //corners[6] = new Vector3(x * spacing, plantGrowthSimulation.heightMap[x, Mathf.Max(z-1, 0)]*15f, (z-1) * spacing); // Backward
+        corners[3] = new Vector3((x+1) * spacing, plantGrowthSimulation.heightMap[Mathf.Min(x+1, plantGrowthSimulation.gridSize-1), Mathf.Max(z-1, 0)]*15f, (z-1) * spacing); // Backward-Right
+
+        // Create mesh from these points
+        Mesh mesh = new Mesh();
+        mesh.vertices = corners;
+        // Define triangles to connect the outer vertices
+        mesh.triangles = new int[] { 0, 3, 2, 2, 1, 0 };// { 0, 1, 2, 2, 3, 0 };
+        mesh.RecalculateNormals();
+        
+        meshFilter.mesh = mesh;
+        transform.position = corners[0];
+    }
+
+    public void ClearGradientVisuals()
+    {
+        ClearPlane();
+        // Remove previous arrows
+        if (xArrow != null) Destroy(xArrow);
+        if (zArrow != null) Destroy(zArrow);
+        if (xGradientText != null) Destroy(xGradientText);
+        if (zGradientText != null) Destroy(zGradientText);
+    }
+    
+    private void UpdateArrows(Vector2 position, Vector2 gradient)
+    {
+        int x = Mathf.RoundToInt(position.x);
+        int z = Mathf.RoundToInt(position.y);
+        float height = plantGrowthSimulation.heightMap[x, z]*15f;
+        float spacing = plantGrowthSimulation.gridSpacing;
+
+        // Remove previous arrows
+        if (xArrow != null) Destroy(xArrow);
+        if (zArrow != null) Destroy(zArrow);
+        if (xGradientText != null) Destroy(xGradientText);
+        if (zGradientText != null) Destroy(zGradientText);
+
+        // Create X-axis arrow
+        xArrow = Instantiate(waterArrowPrefab);
+        float xHeight = ((plantGrowthSimulation.heightMap[Mathf.Max(x-1, 0), Mathf.Max(z-1, 0)] * 14f) +
+                         (plantGrowthSimulation.heightMap[Mathf.Min(x+1, plantGrowthSimulation.gridSize-1), Mathf.Max(z-1, 0)] * 14f))/2;
+        xArrow.transform.position = new Vector3(x * spacing, xHeight, Mathf.Max(z-1, 0) * spacing);
+        xArrow.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+        Vector3 xArrowLookPos = plantGrowthSimulation.plantGrid[Mathf.Min(x+1, plantGrowthSimulation.gridSize-1), Mathf.Max(z-1, 0)].transform.position;
+        xArrowLookPos.y = plantGrowthSimulation.heightMap[Mathf.Min(x+1, plantGrowthSimulation.gridSize-1), Mathf.Max(z-1, 0)]*14f;
+        if (xArrowLookPos.x == xArrow.transform.position.x)
+        {
+            xArrow.transform.position = new Vector3((x - 1) * spacing, plantGrowthSimulation.heightMap[(x - 1), (int)(xArrow.transform.position.z/spacing)] * 14f, xArrow.transform.position.z);
+        }
+        xArrow.transform.rotation = Quaternion.LookRotation(xArrowLookPos - xArrow.transform.position);
+        
+        // Gradient text for X-axis
+        xGradientText = new GameObject("X Gradient Text");
+        xGradientText.transform.rotation = xArrow.transform.rotation;
+        xGradientText.transform.Rotate(Vector3.up, -90);
+        xGradientText.transform.position = xArrow.transform.position + Vector3.up * -3f; // Position above arrow
+        TextMesh xTextMesh = xGradientText.AddComponent<TextMesh>();
+        xTextMesh.text = $"X: {gradient.x:F2}";
+        xTextMesh.fontSize = 30;
+        xTextMesh.color = Color.blue;
+        xTextMesh.anchor = TextAnchor.MiddleCenter;
+
+        // Create Z-axis arrow
+        zArrow = Instantiate(sunArrowPrefab);
+        float zHeight = ((plantGrowthSimulation.heightMap[Mathf.Max(x-1, 0), Mathf.Max(z-1, 0)] * 14f) +
+                         (plantGrowthSimulation.heightMap[Mathf.Max(x-1, 0), Mathf.Min(z+1, plantGrowthSimulation.gridSize-1)] * 14f))/2;
+        zArrow.transform.position = new Vector3((Mathf.Max(x-1, 0)) * spacing, zHeight, z * spacing);
+        zArrow.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+        Vector3 zArrowLookPos = plantGrowthSimulation.plantGrid[Mathf.Max(x-1, 0), Mathf.Min(z+1, plantGrowthSimulation.gridSize-1)].transform.position;
+        zArrowLookPos.y = plantGrowthSimulation.heightMap[Mathf.Max(x-1, 0), Mathf.Min(z+1, plantGrowthSimulation.gridSize-1)]*14f;
+        if (zArrowLookPos.z == zArrow.transform.position.z)
+        {
+            zArrow.transform.position = new Vector3(zArrow.transform.position.x, plantGrowthSimulation.heightMap[(int)
+                (zArrow.transform.position.x/spacing), (z - 1)] * 14f, (z - 1) * spacing);
+        }
+        zArrow.transform.rotation = Quaternion.LookRotation(zArrowLookPos - zArrow.transform.position);
+        
+        // Gradient text for Z-axis
+        zGradientText = new GameObject("Z Gradient Text");
+        zGradientText.transform.rotation = zArrow.transform.rotation;
+        zGradientText.transform.Rotate(Vector3.up, 90);
+        zGradientText.transform.position = zArrow.transform.position + Vector3.up * -3f; // Position above arrow
+        TextMesh zTextMesh = zGradientText.AddComponent<TextMesh>();
+        zTextMesh.text = $"Z: {gradient.y:F2}";
+        zTextMesh.fontSize = 30;
+        zTextMesh.color = Color.yellow;
+        zTextMesh.anchor = TextAnchor.MiddleCenter;
+    }
+
+
+    public void AdjustLearningRate()
+    {
+        learningRate = (float)Math.Round(learningRateSlider.value, 2);
+        learningRateText.text = $"{learningRate}";
+    }
 }

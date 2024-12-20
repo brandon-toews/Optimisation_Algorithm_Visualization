@@ -1,4 +1,4 @@
-using UnityEngine;
+/*using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using TMPro;
@@ -132,4 +132,4 @@ public class AlgorithmComparer : MonoBehaviour
         if (statusText != null)
             statusText.text = isRunning ? "Running..." : "Ready";
     }
-}
+}*/

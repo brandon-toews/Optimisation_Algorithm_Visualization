@@ -1,3 +1,4 @@
+/*
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
@@ -185,3 +186,4 @@ public class AlgorithmVisualizer : MonoBehaviour
         heightGraph.SetPositions(positions);
     }
 }
+*/

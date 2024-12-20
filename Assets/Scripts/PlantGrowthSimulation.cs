@@ -264,13 +264,13 @@ public class PlantGrowthSimulation : MonoBehaviour
         
 
         Vector2 highestPlantCoor = new Vector2 (shortestX, shortestZ);
-        shortestHeight += 0.1f;
+        shortestHeight -= 0.1f;
         plantGrid[(int)highestPlantCoor.x, (int)highestPlantCoor.y].transform.localScale = new Vector3(1, shortestHeight, 1);
         heightMap[shortestX, shortestZ] = shortestHeight;
         HighlightPlant(highestPlantCoor, highlightMaterial);
         
         // Add a label (optional)
-        GameObject textObject = new GameObject("Tallest");
+        GameObject textObject = new GameObject("Shortest");
         textObject.transform.position = new Vector3(shortestX*gridSpacing, shortestHeight*15f, shortestZ*gridSpacing); // Offset for visibility
         //textObject.transform.position = new Vector3(position.x, position.y + 30f, position.z); // Offset for visibility
         TextMesh textMesh = textObject.AddComponent<TextMesh>();
